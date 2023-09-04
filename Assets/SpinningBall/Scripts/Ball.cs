@@ -5,7 +5,8 @@ namespace SpinningBall
 {
     public class Ball : MonoBehaviour
     {
-        public float bounceStrength = 5.0f;
+        [SerializeField] private float _bounceStrength = 5.0f;
+        [SerializeField] private DestroyParticle _destroyPSPrefab;
         private Rigidbody2D _rb;
         private SpriteRenderer _sr;
 
@@ -32,25 +33,61 @@ namespace SpinningBall
             _sr = GetComponent<SpriteRenderer>();   
         }
 
+        private void Start()
+        {
+            GameplayManager.OnPlaying += SetActiveDynamicPhysicBall;
+        }
+
+        private void PlayVFX()
+        {
+            var destroyPs = Instantiate(_destroyPSPrefab, transform.position, Quaternion.identity);
+            destroyPs.SetColor(GetColorByColorType(ColorType));
+            destroyPs.Play(1f);
+
+            Destroy(this.gameObject);
+        }
+
+        private void SetActiveDynamicPhysicBall()
+        {
+            _rb.isKinematic = false;
+        }
+
         private void OnCollisionEnter2D(Collision2D collision)
         {
-            _rb.velocity = Vector2.up * bounceStrength;
+            if (GameplayManager.Instance.CurrentState != GameplayManager.GameState.PLAYING) return;
 
+            _rb.velocity = Vector2.up * _bounceStrength;
             Platform platform;
             if (collision.collider.gameObject.TryGetComponent<Platform>(out platform))
             {
                 if (ColorType == platform.ColorType)
                 {
-                    Debug.Log("Score up");
+                    SoundManager.Instance.PlaySound(SoundType.ScoreUp, false);
+
+                    platform.PlayAnimation();
                     _colorType = Utilities.GetRandomEnum<ColorType>();
                     _sr.color = GetColorByColorType(_colorType);
+
+                    GameManager.Instance.ScoreUp();
                 }
                 else
                 {
-                    Debug.Log("Game over");
+                    SoundManager.Instance.PlaySound(SoundType.Destroyed, false);
+                    platform.PlayAnimation();
 
+                    GameplayManager.Instance.ChangeGameState(GameplayManager.GameState.GAMEOVER);
+                    PlayVFX();
+
+                    
                 }           
             }
+        }
+
+       
+     
+        private void OnDestroy()
+        {
+            GameplayManager.OnPlaying -= SetActiveDynamicPhysicBall;
         }
 
 

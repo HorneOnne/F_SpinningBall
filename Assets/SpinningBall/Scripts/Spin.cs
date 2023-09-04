@@ -9,21 +9,22 @@ namespace SpinningBall
         private bool isRotating = false;
         [SerializeField] private float rotateDuration = 1.0f;
 
-        private void Update()
+        private void OnEnable()
         {
-            if (Input.GetKeyDown(KeyCode.A))
-            {
-                TurnLeft();
-            }
-            else if (Input.GetKeyDown(KeyCode.D))
-            {
-                TurnRight();
-            }
+            UIGameplay.OnTurnLeftBtnClicked += TurnLeft;
+            UIGameplay.OnTurnRightBtnClicked += TurnRight;
         }
+
+        private void OnDisable()
+        {
+            UIGameplay.OnTurnLeftBtnClicked -= TurnLeft;
+            UIGameplay.OnTurnRightBtnClicked -= TurnRight;
+        }
+
 
         public void TurnLeft()
         {
-            if (!isRotating)
+            if (!isRotating && GameplayManager.Instance.CurrentState == GameplayManager.GameState.PLAYING)
             {
                 StartCoroutine(RotateCoroutine(45));
             }
@@ -31,7 +32,7 @@ namespace SpinningBall
 
         public void TurnRight()
         {
-            if (!isRotating)
+            if (!isRotating && GameplayManager.Instance.CurrentState == GameplayManager.GameState.PLAYING)
             {
                 StartCoroutine(RotateCoroutine(-45));
             }
